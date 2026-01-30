@@ -39,7 +39,9 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [lang, setLang] = useState<"en" | "zh">("en");
+  const [columns, setColumns] = useState<2 | 3 | 4>(4);
   const [activeExample, setActiveExample] = useState<Example | null>(null);
+  const [activePreview, setActivePreview] = useState<Example | null>(null);
   const [collapsedBlocks, setCollapsedBlocks] = useState<number[]>([]);
   const [snippetContent, setSnippetContent] = useState<string>("");
   const [snippetStatus, setSnippetStatus] = useState<
@@ -65,6 +67,7 @@ export default function Home() {
       openExample: "Open Example",
       preview: "Preview",
       language: "Language",
+      columns: "Columns",
       all: "All",
       code: "Code",
       viewCode: "View Code",
@@ -89,6 +92,7 @@ export default function Home() {
       openExample: "打开示例",
       preview: "预览",
       language: "语言",
+      columns: "列数",
       all: "全部",
       code: "代码",
       viewCode: "查看代码",
@@ -269,6 +273,28 @@ export default function Home() {
     return () => controller.abort();
   }, [activeExample?.slug]);
 
+  useEffect(() => {
+    if (!activePreview) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActivePreview(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activePreview]);
+
   const handleCopyCode = async () => {
     if (!hasCode) {
       return;
@@ -319,33 +345,53 @@ export default function Home() {
                 </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-              {copy[lang].language}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                {copy[lang].language}
+              </div>
+              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-0.5">
+                <button
+                  className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
+                    lang === "en"
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-slate-500 hover:text-blue-700"
+                  }`}
+                  type="button"
+                  onClick={() => setLang("en")}
+                >
+                  EN
+                </button>
+                <button
+                  className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
+                    lang === "zh"
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-slate-500 hover:text-blue-700"
+                  }`}
+                  type="button"
+                  onClick={() => setLang("zh")}
+                >
+                  中文
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-0.5">
-              <button
-                className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
-                  lang === "en"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-slate-500 hover:text-blue-700"
-                }`}
-                type="button"
-                onClick={() => setLang("en")}
-              >
-                EN
-              </button>
-              <button
-                className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
-                  lang === "zh"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-slate-500 hover:text-blue-700"
-                }`}
-                type="button"
-                onClick={() => setLang("zh")}
-              >
-                中文
-              </button>
+            <div className="flex items-center gap-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                {copy[lang].columns}
+              </div>
+              <div className="rounded-full border border-slate-200 bg-white px-2 py-0.5">
+                <select
+                  className="bg-transparent px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600 outline-none"
+                  value={columns}
+                  onChange={(event) =>
+                    setColumns(Number(event.target.value) as 2 | 3 | 4)
+                  }
+                >
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                </select>
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 p-3 backdrop-blur">
@@ -379,21 +425,32 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <section
+          className={`grid gap-3 sm:grid-cols-2 ${
+            columns === 2
+              ? "lg:grid-cols-2 xl:grid-cols-2"
+              : columns === 3
+                ? "lg:grid-cols-3 xl:grid-cols-3"
+                : "lg:grid-cols-3 xl:grid-cols-4"
+          }`}
+        >
           {filteredExamples.map((example) => (
             <article
               key={example.title}
               className="group relative overflow-hidden rounded-xl border border-white/80 bg-white/70 p-3 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.6)] transition hover:-translate-y-1 hover:shadow-[0_24px_60px_-36px_rgba(15,23,42,0.7)]"
             >
               <div
-                className={`relative h-24 overflow-hidden rounded-lg bg-gradient-to-br ${example.accent}`}
+                className={`relative overflow-hidden rounded-lg bg-gradient-to-br ${
+                  columns === 2 ? "h-32" : columns === 3 ? "h-28" : "h-24"
+                } ${example.accent}`}
               >
                 <img
                   alt={`Preview of ${example.title}`}
-                  className="h-full w-full object-cover opacity-90"
+                  className="h-full w-full cursor-zoom-in object-cover opacity-90 transition duration-200 group-hover:opacity-100"
                   decoding="async"
                   loading="lazy"
                   src={example.preview}
+                  onClick={() => setActivePreview(example)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/60 via-white/0 to-white/20" />
               </div>
@@ -588,6 +645,36 @@ export default function Home() {
                   </code>
                 </pre>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {activePreview && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6">
+          <button
+            aria-label="Close preview"
+            className="absolute inset-0 cursor-pointer"
+            type="button"
+            onClick={() => setActivePreview(null)}
+          />
+          <div className="relative z-10 flex max-h-full max-w-6xl flex-col items-center gap-3">
+            <button
+              aria-label="Close preview"
+              className="absolute -top-4 right-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-lg font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              type="button"
+              onClick={() => setActivePreview(null)}
+            >
+              ×
+            </button>
+            <img
+              alt={`Preview of ${activePreview.title}`}
+              className="max-h-[85vh] w-auto rounded-2xl border border-white/30 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.8)]"
+              src={activePreview.preview}
+            />
+            <div className="text-center text-xs text-white/80">
+              {lang === "zh" && activePreview.titleCn
+                ? activePreview.titleCn
+                : activePreview.title}
             </div>
           </div>
         </div>
