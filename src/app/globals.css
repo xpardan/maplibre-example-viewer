@@ -22,5 +22,73 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), "Trebuchet MS", sans-serif;
+}
+
+.code-block code {
+  font-family: var(--font-mono), "Courier New", monospace;
+}
+
+.code-line {
+  gap: 12px;
+}
+
+.code-fold-button {
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+  text-align: center;
+  color: #93c5fd;
+}
+
+.code-block .token.comment,
+.code-block .token.prolog,
+.code-block .token.doctype,
+.code-block .token.cdata {
+  color: #94a3b8;
+}
+
+.code-block .token.punctuation {
+  color: #cbd5f5;
+}
+
+.code-block .token.property,
+.code-block .token.tag,
+.code-block .token.boolean,
+.code-block .token.number,
+.code-block .token.constant,
+.code-block .token.symbol {
+  color: #93c5fd;
+}
+
+.code-block .token.selector,
+.code-block .token.attr-name,
+.code-block .token.string,
+.code-block .token.char,
+.code-block .token.builtin,
+.code-block .token.inserted {
+  color: #a7f3d0;
+}
+
+.code-block .token.operator,
+.code-block .token.entity,
+.code-block .token.url,
+.code-block .token.variable {
+  color: #f8b4b4;
+}
+
+.code-block .token.atrule,
+.code-block .token.attr-value,
+.code-block .token.keyword {
+  color: #c7d2fe;
+}
+
+.code-block .token.function,
+.code-block .token.class-name {
+  color: #fde68a;
+}
+
+.code-block .token.regex,
+.code-block .token.important {
+  color: #fca5a5;
 }
