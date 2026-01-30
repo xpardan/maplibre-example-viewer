@@ -147,6 +147,8 @@ export default function Home() {
     (): string[] => highlightedCode.split("\n"),
     [highlightedCode]
   );
+  const modalContentState =
+    snippetStatus === "loading" ? "loading" : hasCode ? "ready" : "empty";
   const blockInfo = useMemo(() => {
     const starts: number[] = [];
     const ends = new Map<number, number>();
@@ -455,14 +457,14 @@ export default function Home() {
         )}
       </div>
       {activeExample && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8">
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8">
           <button
             aria-label="Close"
             className="absolute inset-0 cursor-pointer"
             type="button"
             onClick={() => setActiveExample(null)}
           />
-          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.7)]">
+          <div className="modal-panel relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.7)]">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -501,10 +503,15 @@ export default function Home() {
                 </button>
               </div>
             </div>
-            <div className="px-6 py-5">
+            <div className={`modal-body px-6 py-5 ${modalContentState}`}>
               {snippetStatus === "loading" && (
-                <div className="mb-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                  {copy[lang].codeLoading}
+                <div className="mb-4 flex items-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  <span className="loading-dots" aria-hidden="true">
+                    <span className="loading-dot" />
+                    <span className="loading-dot" />
+                    <span className="loading-dot" />
+                  </span>
+                  <span>{copy[lang].codeLoading}</span>
                 </div>
               )}
               {snippetStatus === "error" && (
