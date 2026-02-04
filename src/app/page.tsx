@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "@codemirror/state";
 import { foldGutter, indentUnit } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
-import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { syntaxHighlighting } from "@codemirror/language";
 import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
 import { html } from "@codemirror/lang-html";
+import { dracula } from "@uiw/codemirror-theme-dracula";
 import examplesData from "../data/examples.json";
 
 type Example = {
@@ -222,15 +223,14 @@ export default function Home() {
         EditorView.lineWrapping,
         indentUnit.of("  "),
         languageExtension,
+        dracula,
         foldGutter({
           openText: "▼",
           closedText: "▶",
         }),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(dracula),
         EditorView.theme({
           "&": {
-            backgroundColor: "transparent",
-            color: "#e2e8f0",
             fontSize: "12px",
             fontFamily:
               "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
@@ -242,18 +242,16 @@ export default function Home() {
             padding: "0 16px",
           },
           ".cm-gutters": {
-            backgroundColor: "transparent",
             borderRight: "1px solid rgba(148,163,184,0.2)",
-            color: "#94a3b8",
             paddingRight: "6px",
           },
           ".cm-foldGutter span": {
-            color: "#38bdf8",
+            color: "#bd93f9",
           },
           ".cm-foldPlaceholder": {
-            backgroundColor: "rgba(56,189,248,0.15)",
-            border: "1px solid rgba(56,189,248,0.35)",
-            color: "#e2e8f0",
+            backgroundColor: "rgba(189,147,249,0.2)",
+            border: "1px solid rgba(189,147,249,0.5)",
+            color: "#f8f8f2",
             padding: "0 6px",
             borderRadius: "999px",
           },
