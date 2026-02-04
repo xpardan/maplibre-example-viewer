@@ -228,7 +228,6 @@ export default function Home() {
           openText: "▼",
           closedText: "▶",
         }),
-        syntaxHighlighting(dracula),
         EditorView.theme({
           "&": {
             fontSize: "12px",
