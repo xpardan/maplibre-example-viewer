@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Prism from "prismjs";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-json";
-import "prismjs/components/prism-typescript";
+import { EditorState } from "@codemirror/state";
+import { foldGutter, indentUnit } from "@codemirror/language";
+import { EditorView } from "@codemirror/view";
+import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { javascript } from "@codemirror/lang-javascript";
+import { json } from "@codemirror/lang-json";
+import { html } from "@codemirror/lang-html";
 import examplesData from "../data/examples.json";
 
 type Example = {
@@ -42,7 +45,6 @@ export default function Home() {
   const [columns, setColumns] = useState<2 | 3 | 4>(4);
   const [activeExample, setActiveExample] = useState<Example | null>(null);
   const [activePreview, setActivePreview] = useState<Example | null>(null);
-  const [collapsedBlocks, setCollapsedBlocks] = useState<number[]>([]);
   const [snippetContent, setSnippetContent] = useState<string>("");
   const [snippetStatus, setSnippetStatus] = useState<
     "idle" | "loading" | "ready" | "error"
@@ -141,97 +143,22 @@ export default function Home() {
   const activeCode = snippetContent || activeExample?.codePreview || "";
   const hasCode = activeCode.trim().length > 0;
   const activeCodeLang = (activeExample?.codeLang || "javascript").toLowerCase();
-  const codeLines = useMemo(() => activeCode.split("\n"), [activeCode]);
-  const highlightedCode = useMemo(() => {
-    const grammar =
-      Prism.languages[activeCodeLang] ?? Prism.languages.javascript;
-    return Prism.highlight(activeCode, grammar, activeCodeLang);
-  }, [activeCodeLang, activeCode]);
-  const highlightedLines = useMemo(
-    (): string[] => highlightedCode.split("\n"),
-    [highlightedCode]
-  );
   const modalContentState =
     snippetStatus === "loading" ? "loading" : hasCode ? "ready" : "empty";
-  const blockInfo = useMemo(() => {
-    const starts: number[] = [];
-    const ends = new Map<number, number>();
-    const stack: number[] = [];
-
-    let lineIndex = 0;
-    let inString: "'" | '"' | "`" | null = null;
-    let inLineComment = false;
-    let inBlockComment = false;
-    let escaped = false;
-
-    for (let i = 0; i < activeCode.length; i += 1) {
-      const char = activeCode[i];
-      const next = activeCode[i + 1];
-
-      if (char === "\n") {
-        lineIndex += 1;
-        inLineComment = false;
-        escaped = false;
-        continue;
-      }
-
-      if (inLineComment) {
-        continue;
-      }
-
-      if (inBlockComment) {
-        if (char === "*" && next === "/") {
-          inBlockComment = false;
-          i += 1;
-        }
-        continue;
-      }
-
-      if (inString) {
-        if (!escaped && char === inString) {
-          inString = null;
-        }
-        escaped = !escaped && char === "\\";
-        continue;
-      }
-
-      if (char === "/" && next === "/") {
-        inLineComment = true;
-        i += 1;
-        continue;
-      }
-
-      if (char === "/" && next === "*") {
-        inBlockComment = true;
-        i += 1;
-        continue;
-      }
-
-      if (char === "'" || char === '"' || char === "`") {
-        inString = char;
-        escaped = false;
-        continue;
-      }
-
-      if (char === "{") {
-        stack.push(lineIndex);
-        continue;
-      }
-
-      if (char === "}") {
-        const startLine = stack.pop();
-        if (startLine !== undefined && lineIndex > startLine) {
-          const currentEnd = ends.get(startLine) ?? startLine;
-          ends.set(startLine, Math.max(currentEnd, lineIndex));
-          if (!starts.includes(startLine)) {
-            starts.push(startLine);
-          }
-        }
-      }
+  const editorHostRef = useRef<HTMLDivElement | null>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
+  const languageExtension = useMemo(() => {
+    if (activeCodeLang.includes("ts")) {
+      return javascript({ typescript: true });
     }
-
-    return { starts, ends };
-  }, [activeCode]);
+    if (activeCodeLang.includes("json")) {
+      return json();
+    }
+    if (activeCodeLang.includes("html")) {
+      return html();
+    }
+    return javascript();
+  }, [activeCodeLang]);
 
   useEffect(() => {
     setCopyStatus("idle");
@@ -272,6 +199,84 @@ export default function Home() {
 
     return () => controller.abort();
   }, [activeExample?.slug]);
+
+  useEffect(() => {
+    if (!editorHostRef.current || !hasCode) {
+      if (editorViewRef.current) {
+        editorViewRef.current.destroy();
+        editorViewRef.current = null;
+      }
+      return;
+    }
+
+    if (editorViewRef.current) {
+      editorViewRef.current.destroy();
+      editorViewRef.current = null;
+    }
+
+    const state = EditorState.create({
+      doc: activeCode,
+      extensions: [
+        EditorState.readOnly.of(true),
+        EditorView.editable.of(false),
+        EditorView.lineWrapping,
+        indentUnit.of("  "),
+        languageExtension,
+        foldGutter({
+          openText: "▼",
+          closedText: "▶",
+        }),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        EditorView.theme({
+          "&": {
+            backgroundColor: "transparent",
+            color: "#e2e8f0",
+            fontSize: "12px",
+            fontFamily:
+              "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+          },
+          ".cm-content": {
+            padding: "12px 0",
+          },
+          ".cm-line": {
+            padding: "0 16px",
+          },
+          ".cm-gutters": {
+            backgroundColor: "transparent",
+            borderRight: "1px solid rgba(148,163,184,0.2)",
+            color: "#94a3b8",
+            paddingRight: "6px",
+          },
+          ".cm-foldGutter span": {
+            color: "#38bdf8",
+          },
+          ".cm-foldPlaceholder": {
+            backgroundColor: "rgba(56,189,248,0.15)",
+            border: "1px solid rgba(56,189,248,0.35)",
+            color: "#e2e8f0",
+            padding: "0 6px",
+            borderRadius: "999px",
+          },
+          ".cm-scroller": {
+            fontFamily:
+              "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+          },
+        }),
+      ],
+    });
+
+    editorViewRef.current = new EditorView({
+      state,
+      parent: editorHostRef.current,
+    });
+
+    return () => {
+      if (editorViewRef.current) {
+        editorViewRef.current.destroy();
+        editorViewRef.current = null;
+      }
+    };
+  }, [activeCode, hasCode, languageExtension]);
 
   useEffect(() => {
     if (!activePreview) {
@@ -490,7 +495,6 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     setActiveExample(example);
-                    setCollapsedBlocks([]);
                   }}
                 >
                   {copy[lang].viewCode}
@@ -582,68 +586,9 @@ export default function Home() {
                 </div>
               )}
               {hasCode && (
-                <pre className="code-block max-h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-slate-100">
-                  <code className={`language-${activeCodeLang}`}>
-                    {highlightedLines.map((lineHtml: string, index) => {
-                      const lineNumber = index + 1;
-                      const isBlockStart = blockInfo.starts.includes(index);
-                      const blockEnd = blockInfo.ends.get(index);
-                      const isCollapsed = collapsedBlocks.includes(index);
-                      const isHidden =
-                        collapsedBlocks.some((start) => {
-                          const end = blockInfo.ends.get(start);
-                          return (
-                            end !== undefined &&
-                            index > start &&
-                            index <= end
-                          );
-                        }) && !isBlockStart;
-
-                      if (isHidden) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={`${activeExample?.slug ?? "code"}-${index}`}
-                          className="code-line flex gap-3"
-                        >
-                          <div className="flex w-12 items-start justify-end gap-2 text-right text-[10px] text-slate-500">
-                            {isBlockStart && blockEnd !== undefined ? (
-                              <button
-                                aria-label="Toggle fold"
-                                className="code-fold-button"
-                                type="button"
-                                onClick={() => {
-                                  setCollapsedBlocks((prev) => {
-                                    const exists = prev.includes(index);
-                                    if (exists) {
-                                      return prev.filter(
-                                        (entry) => entry !== index
-                                      );
-                                    }
-                                    return [...prev, index];
-                                  });
-                                }}
-                              >
-                                {isCollapsed ? "▶" : "▼"}
-                              </button>
-                            ) : (
-                              <span className="inline-block w-3" />
-                            )}
-                            <span>{lineNumber}</span>
-                          </div>
-                          <span
-                            className="code-content flex-1"
-                            dangerouslySetInnerHTML={{
-                              __html: lineHtml || " ",
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </code>
-                </pre>
+                <div className="code-block max-h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-900">
+                  <div ref={editorHostRef} />
+                </div>
               )}
             </div>
           </div>

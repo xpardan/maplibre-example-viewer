@@ -10,8 +10,13 @@
     "sync:examples": "node scripts/sync-examples.mjs"
   },
   "dependencies": {
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.11.1",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.36.4",
     "next": "16.1.6",
-    "prismjs": "^1.30.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
